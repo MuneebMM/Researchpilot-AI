@@ -1,0 +1,27 @@
+# Web Framework
+fastapi==0.115.12
+uvicorn==0.34.0
+
+# Environment Variables
+python-dotenv==1.1.0
+
+# LangChain Core
+langchain==0.3.25
+langchain-core==0.3.59
+langchain-community==0.3.23
+langgraph==0.3.34
+
+# Gemini LLM
+langchain-google-genai==2.1.4
+
+# Search Tool
+tavily-python==0.5.4
+
+# Observability
+langsmith==0.3.42
+
+# Data Validation
+pydantic==2.11.3
+
+# HTTP Client (needed internally by many above)
+httpx==0.28.1
