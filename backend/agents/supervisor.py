@@ -47,15 +47,18 @@ def supervisor_node(state: ResearchState) -> dict:
         HumanMessage(content=f"Research goal: {state['research_goal']}"),
     ]
 
-    response = llm.invoke(messages)
-    content = response.content if hasattr(response, "content") else str(response)
-
     try:
+        response = llm.invoke(messages)
+        content = response.content if hasattr(response, "content") else str(response)
         parsed = json.loads(content)
         raw_agents: list = list(parsed.get("next_agents", []))
         validated = [a for a in raw_agents if a in VALID_AGENTS]
         next_agents = validated if validated else VALID_AGENTS[:]
     except json.JSONDecodeError:
+        print("⚠️  Supervisor JSON parse failed — defaulting to all agents")
+        next_agents = VALID_AGENTS[:]
+    except Exception as e:
+        print(f"⚠️  Supervisor LLM error: {e} — defaulting to all agents")
         next_agents = VALID_AGENTS[:]
 
     return {"current_agent": "supervisor", "next_agents": next_agents}
@@ -74,20 +77,23 @@ def critic_node(state: ResearchState) -> dict:
         HumanMessage(content=f"Research goal: {state['research_goal']}\n\n{compiled}"),
     ]
 
-    raw = llm.invoke(messages)
-    content = raw.content if hasattr(raw, "content") else str(raw)
-
     try:
+        raw = llm.invoke(messages)
+        content = raw.content if hasattr(raw, "content") else str(raw)
         parsed = json.loads(content)
         needs_more = bool(parsed.get("needs_more_research", False))
         feedback = str(parsed.get("feedback", ""))
     except json.JSONDecodeError:
+        print("⚠️  Critic JSON parse failed — proceeding to synthesis")
         needs_more = False
         feedback = f"Critic JSON parse failed — proceeding to synthesis. Raw: {content[:200]}"
+    except Exception as e:
+        print(f"⚠️  Critic LLM error: {e} — proceeding to synthesis")
+        needs_more = False
+        feedback = f"Critic LLM error: {e}"
 
-    # Hard guard: after 2 full iterations the loop terminates regardless,
-    # preventing infinite research spirals.
-    if state["iteration_count"] >= 2:
+    # Hard guard: after 3 full iterations the loop terminates regardless.
+    if state["iteration_count"] >= 3:
         needs_more = False
         feedback = "Maximum iteration count reached. Finalising report."
 
@@ -98,12 +104,16 @@ def critic_node(state: ResearchState) -> dict:
     }
 
 
+SYNTHESIZER_MAX_INPUT_CHARS_PER_SECTION = 4000
+SYNTHESIZER_MAX_OUTPUT_TOKENS = 2048
+
+
 def synthesizer_node(state: ResearchState) -> dict:
     """Produce the final intelligence report from all research findings."""
     print("📝 Synthesizer Agent writing report...")
-    llm = get_llm()
+    llm = get_llm(max_output_tokens=SYNTHESIZER_MAX_OUTPUT_TOKENS)
 
-    compiled = _compile_results(state)
+    compiled = _compile_results(state, max_chars_per_section=SYNTHESIZER_MAX_INPUT_CHARS_PER_SECTION)
 
     messages = [
         SystemMessage(content=SYNTHESIZER_PROMPT),
@@ -112,8 +122,12 @@ def synthesizer_node(state: ResearchState) -> dict:
         ),
     ]
 
-    response = llm.invoke(messages)
-    report = response.content if hasattr(response, "content") else str(response)
+    try:
+        response = llm.invoke(messages)
+        report = response.content if hasattr(response, "content") else str(response)
+    except Exception as e:
+        print(f"⚠️  Synthesizer LLM error: {e}")
+        report = f"Report synthesis failed due to an error: {e}\n\nRaw research data:\n\n{compiled}"
 
     return {"final_report": report}
 
@@ -122,18 +136,27 @@ def synthesizer_node(state: ResearchState) -> dict:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _compile_results(state: ResearchState) -> str:
-    """Concatenate all result lists into a single human-readable string."""
+def _compile_results(state: ResearchState, max_chars_per_section: int | None = None) -> str:
+    """Concatenate all result lists into a single human-readable string.
+
+    If max_chars_per_section is set, each section is truncated to that many chars
+    to keep the synthesizer's input bounded (faster inference).
+    """
     sections = []
 
-    if state.get("search_results"):
-        sections.append("=== Web Search Results ===\n" + _join(state["search_results"]))
-    if state.get("news_results"):
-        sections.append("=== News & Media ===\n" + _join(state["news_results"]))
-    if state.get("tech_results"):
-        sections.append("=== Technology & AI Strategy ===\n" + _join(state["tech_results"]))
-    if state.get("financial_results"):
-        sections.append("=== Financial Overview ===\n" + _join(state["financial_results"]))
+    def add(label: str, key: str) -> None:
+        items = state.get(key)
+        if not items:
+            return
+        body = _join(items)
+        if max_chars_per_section and len(body) > max_chars_per_section:
+            body = body[:max_chars_per_section] + "\n...[truncated]"
+        sections.append(f"=== {label} ===\n{body}")
+
+    add("Web Search Results", "search_results")
+    add("News & Media", "news_results")
+    add("Technology & AI Strategy", "tech_results")
+    add("Financial Overview", "financial_results")
 
     return "\n\n".join(sections) if sections else "No research results gathered yet."
 

@@ -72,10 +72,16 @@ def list_reports() -> list[dict]:
 @app.post("/api/research", response_model=ResearchResponse)
 def research_endpoint(request: ResearchRequest) -> ResearchResponse:
     """Run the full multi-agent research pipeline and return the intelligence report."""
-    result = run_research(request.research_goal)
+    try:
+        result = run_research(request.research_goal)
+    except EnvironmentError as e:
+        raise HTTPException(status_code=500, detail=f"Configuration error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Research pipeline failed: {e}")
+
     report_text = result["report"]
-    pdf_path = result["pdf_path"]
-    pdf_url = f"/reports/{os.path.basename(pdf_path)}"
+    pdf_path = result.get("pdf_path", "")
+    pdf_url = f"/reports/{os.path.basename(pdf_path)}" if pdf_path else ""
     return ResearchResponse(
         result=report_text,
         status="success",

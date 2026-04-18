@@ -95,9 +95,16 @@ def run_research(research_goal: str) -> dict:
         A dict with the report text and the path to the generated PDF.
     """
     initial_state = create_initial_state(research_goal)
-    result: ResearchState = research_graph.invoke(initial_state)
-    final_report = result["final_report"]
-    pdf_path = generate_pdf(final_report, research_goal)
+    result: ResearchState = research_graph.invoke(
+        initial_state,
+        config={"recursion_limit": 50},
+    )
+    final_report = result.get("final_report") or "Report generation did not produce output."
+    try:
+        pdf_path = generate_pdf(final_report, research_goal)
+    except Exception as e:
+        print(f"⚠️  PDF generation failed: {e}")
+        pdf_path = ""
     return {"report": final_report, "pdf_path": pdf_path}
 
 

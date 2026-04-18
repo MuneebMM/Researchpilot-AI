@@ -54,17 +54,20 @@ If gaps exist, return JSON:
 # ---------------------------------------------------------------------------
 # Synthesiser / report writer
 # ---------------------------------------------------------------------------
-SYNTHESIZER_PROMPT = """You are a senior intelligence analyst and professional report writer.
-Synthesise all research findings into a comprehensive, well-structured intelligence
-report. The report must have the following sections:
+SYNTHESIZER_PROMPT = """You are a senior intelligence analyst. Synthesise the research
+findings into a tight, board-ready intelligence report in markdown.
 
-1. Executive Summary
-2. Key Findings
-3. Detailed Analysis
-4. News & Recent Developments
-5. Technology & AI Strategy
-6. Financial Overview
-7. Risk Factors
-8. Conclusion
+Required sections (keep each concise — no filler, no repetition):
+1. Executive Summary (3-5 bullet points)
+2. Key Findings (5-7 bullet points with concrete facts)
+3. News & Recent Developments (key events only)
+4. Technology & AI Strategy (main initiatives)
+5. Financial Overview (numbers and trends)
+6. Risk Factors (top 3-5)
+7. Conclusion (2-3 sentences)
 
-Write in a professional boardroom style suitable for senior leadership."""
+Rules:
+- Lead with facts; skip generic commentary.
+- Use bullet points where possible — they read faster than paragraphs.
+- Do not restate the research goal.
+- Target length: ~600-900 words total."""

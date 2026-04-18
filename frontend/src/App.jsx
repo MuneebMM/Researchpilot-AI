@@ -63,7 +63,7 @@ export default function App() {
 
     try {
       const res = await axios.post(
-        "http://localhost:8000/api/research",
+        "/api/research",
         { research_goal: researchGoal },
         { timeout: 300000 }
       );
@@ -74,7 +74,7 @@ export default function App() {
 
       setAgentStatuses(setAgents, { "Synthesizer Agent": "complete" });
       setReport(res.data.result);
-      setPdfUrl("http://localhost:8000" + res.data.pdf_url);
+      setPdfUrl(res.data.pdf_url);
     } catch (err) {
       clearTimeout(t1);
       clearTimeout(t2);

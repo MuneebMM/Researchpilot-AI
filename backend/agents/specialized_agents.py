@@ -46,10 +46,10 @@ def web_search_agent_node(state: ResearchState) -> dict:
         ]
         response = llm.invoke(messages)
         summary = response.content if hasattr(response, "content") else str(response)
-        return {"search_results": [summary], "current_agent": "web_search"}
+        return {"search_results": [summary]}
     except Exception as e:
         print(f"⚠️  Web Search Agent error: {str(e)}")
-        return {"search_results": [], "current_agent": "web_search"}
+        return {"search_results": [f"[Web Search failed: {e}]"]}
 
 
 def news_agent_node(state: ResearchState) -> dict:
@@ -68,10 +68,10 @@ def news_agent_node(state: ResearchState) -> dict:
         ]
         response = llm.invoke(messages)
         summary = response.content if hasattr(response, "content") else str(response)
-        return {"news_results": [summary], "current_agent": "news"}
+        return {"news_results": [summary]}
     except Exception as e:
         print(f"⚠️  News Agent error: {str(e)}")
-        return {"news_results": [], "current_agent": "news"}
+        return {"news_results": [f"[News search failed: {e}]"]}
 
 
 def tech_agent_node(state: ResearchState) -> dict:
@@ -90,10 +90,10 @@ def tech_agent_node(state: ResearchState) -> dict:
         ]
         response = llm.invoke(messages)
         summary = response.content if hasattr(response, "content") else str(response)
-        return {"tech_results": [summary], "current_agent": "tech"}
+        return {"tech_results": [summary]}
     except Exception as e:
         print(f"⚠️  Tech Agent error: {str(e)}")
-        return {"tech_results": [], "current_agent": "tech"}
+        return {"tech_results": [f"[Tech search failed: {e}]"]}
 
 
 def financial_agent_node(state: ResearchState) -> dict:
@@ -112,10 +112,10 @@ def financial_agent_node(state: ResearchState) -> dict:
         ]
         response = llm.invoke(messages)
         summary = response.content if hasattr(response, "content") else str(response)
-        return {"financial_results": [summary], "current_agent": "financial"}
+        return {"financial_results": [summary]}
     except Exception as e:
         print(f"⚠️  Financial Agent error: {str(e)}")
-        return {"financial_results": [], "current_agent": "financial"}
+        return {"financial_results": [f"[Financial search failed: {e}]"]}
 
 
 # ---------------------------------------------------------------------------

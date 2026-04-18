@@ -14,21 +14,31 @@ import os
 load_dotenv()
 
 
-def get_llm() -> ChatGoogleGenerativeAI:
+def get_llm(max_output_tokens: int | None = None) -> ChatGoogleGenerativeAI:
     """Return a configured ChatGoogleGenerativeAI instance.
 
     Uses temperature=0 for deterministic, reproducible agent behavior.
     The model name and API key are read from environment variables so
     no secrets are ever hardcoded.
 
+    Args:
+        max_output_tokens: Optional cap on generated tokens (faster responses).
+
     Returns:
         ChatGoogleGenerativeAI: A ready-to-use LLM instance.
     """
-    return ChatGoogleGenerativeAI(
-        model=os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite-preview"),
-        temperature=0,
-        google_api_key=os.getenv("GEMINI_API_KEY"),
-    )
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise EnvironmentError("GEMINI_API_KEY is not set. Check your .env file.")
+    kwargs = {
+        "model": os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite-preview"),
+        "temperature": 0,
+        "google_api_key": api_key,
+        "request_timeout": 120,
+    }
+    if max_output_tokens:
+        kwargs["max_output_tokens"] = max_output_tokens
+    return ChatGoogleGenerativeAI(**kwargs)
 
 
 if __name__ == "__main__":

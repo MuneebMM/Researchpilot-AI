@@ -38,8 +38,8 @@ class ResearchState(TypedDict):
     final_report: str
     """The synthesised final intelligence report (set at graph termination)."""
 
-    current_agent: Annotated[str, operator.add]
-    """Name of the agent node currently executing (accumulates all updates)."""
+    current_agent: str
+    """Name of the agent node currently executing."""
 
     next_agents: list[str]
     """List of agent names the supervisor has selected for the next wave."""
