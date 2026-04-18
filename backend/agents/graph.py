@@ -37,6 +37,7 @@ from backend.agents.specialized_agents import (
     tech_agent_node,
     financial_agent_node,
 )
+from backend.utils.pdf_generator import generate_pdf
 
 
 def _build_graph() -> StateGraph:
@@ -84,20 +85,23 @@ def _build_graph() -> StateGraph:
 research_graph = _build_graph().compile()
 
 
-def run_research(research_goal: str) -> str:
+def run_research(research_goal: str) -> dict:
     """Run one full research session and return the final intelligence report.
 
     Args:
         research_goal: The user question or topic to investigate.
 
     Returns:
-        The synthesised report string (content of final_report field).
+        A dict with the report text and the path to the generated PDF.
     """
     initial_state = create_initial_state(research_goal)
     result: ResearchState = research_graph.invoke(initial_state)
-    return result["final_report"]
+    final_report = result["final_report"]
+    pdf_path = generate_pdf(final_report, research_goal)
+    return {"report": final_report, "pdf_path": pdf_path}
 
 
 if __name__ == "__main__":
-    report = run_research("What is Adobe's AI strategy and financial performance in 2026?")
-    print(report)
+    result = run_research("What is Adobe's AI strategy and financial performance in 2026?")
+    print(result["report"])
+    print(f"\n✅ PDF saved at: {result['pdf_path']}")
