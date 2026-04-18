@@ -4,8 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from backend.agents.research_agent import build_graph, AgentState
-from langchain_core.messages import HumanMessage
+from backend.agents.graph import run_research
 
 
 app = FastAPI(title="ResearchPilot AI")
@@ -42,20 +41,9 @@ def health_check() -> dict[str, str]:
 
 @app.post("/api/research", response_model=ResearchResponse)
 def research_endpoint(request: ResearchRequest) -> ResearchResponse:
-    """Run the researcher agent and return a synthesised intelligence report."""
-    # Compile the graph per request so max_results is always respected.
-    graph = build_graph(max_results=request.max_results).compile()
-
-    initial_state: AgentState = {
-        "messages": [HumanMessage(content=request.research_goal)],
-        "research_goal": request.research_goal,
-        "max_results": request.max_results,
-    }
-
-    final_state = graph.invoke(initial_state)
-    final_text = final_state["messages"][-1].content
-
-    return ResearchResponse(result=final_text, status="success")
+    """Run the full multi-agent research pipeline and return the intelligence report."""
+    report = run_research(request.research_goal)
+    return ResearchResponse(result=report, status="success")
 
 
 if __name__ == "__main__":
